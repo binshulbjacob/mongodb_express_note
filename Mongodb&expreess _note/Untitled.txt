@@ -1,0 +1,184 @@
+mongodb_express
+
+mongodb@3.x
+
+FORM CREATE 
+ DATE BASE CONNECT MONGODB 
+
+ <form action="/register" class="form-control" method="post">
+
+<!-------------------------------------------------------------------------------userregistration--------------------------------------------------------------------------------------->
+
+db.js
+
+const { MongoClient } = require('mongodb');
+
+const url = 'mongodb://127.0.0.1:27017/';
+const dbName = 'expmongo';
+
+async function connectToDB() {
+  const client = new MongoClient(url, { useNewUrlParser: true, useUnifiedTopology: true });
+  try {
+    await client.connect();
+    const db = client.db(dbName);
+    console.log('Connected to MongoDB');
+    return db;
+  } catch (error) {
+    console.error('Error connecting to MongoDB:', error);
+    throw error;
+  }
+}
+
+module.exports = connectToDB;
+
+index.js
+
+var express = require('express');
+var router = express.Router();
+var connectToDB = require('../db');
+
+/* GET home page. */
+router.get('/', function(req, res, next) {
+  res.render('index', { title: 'Express' });
+});
+
+router.get('/reg', function(req, res, next) {
+  res.render('reg');
+});
+
+router.post('/regdata', async function(req, res, next) {
+  try {
+    const db = await connectToDB(); // Wait for the database connection
+    var name = req.body.name;
+    var address = req.body.address;
+    var dob = req.body.dob;
+    var email = req.body.email;
+    var password = req.body.password;
+    var myobj = { name: name, address: address, dob: dob, email: email, password: password };
+    await db.collection("newexp").insertOne(myobj);
+    console.log("1 data inserted");
+    res.redirect('/reg');
+  } catch (error) {
+    console.error("Error handling registration data:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+module.exports = router;
+
+
+<!--------------------------------------------------------------------select quary------------------------------------------------------------------------------------------------------->
+/* REGISTER view */
+
+router.get('/Registrerview', async function(req, res,next) {
+
+  const db = await connectToDB();
+   await db.collection("registerform").find({}).toArray(function(err, result) {
+    if (err) throw err;
+    console.log(result);
+  res.render('Registrerview',{data:result});
+});
+
+});
+
+
+  <or>
+
+router.get('/table',async function(req, res, next) {
+  const db = await connectToDB();
+  const result=await db.collection("db1").find({}).toArray();
+ 
+// console.log(result);
+  res.render('table',{data:result});
+});
+
+<!---------------------------------------------------------------------------delete------------------------>
+js   (post in the top of js )
+
+const {ObjectId}= require('mongodb')
+
+js
+
+router.get('/delete/:id',async function(req, res, next) {
+  const db = await connectToDB();
+  var id=req.params.id;
+  console.log(id)
+  var q={_id: new ObjectId(id) }
+  await db.collection("registerform").deleteOne(q,function(err,res){
+    if(err) throw err;
+    console.log("1 data deleted")
+});
+res.redirect('/Registrerview')
+});
+
+<!---------------------------------------------------------------------------edit------------------------>
+
+*need hbs page 
+*call each 
+*passid switch 
+
+buy switch mata pagila hbs 
+ <a href="/edit/{{this._id}}" class="btn btn-success">edit</a>
+
+hbs
+
+<div class="container w-50">
+    <h3 class="text-center" style="color: coral;">Registration table Edit </h3> <br>
+       {{#each data}}
+       <form action="/edit/{{this._id}}" class="form-control" method="post">
+
+      <input type="text" name="name" placeholder="name" class="form-control"value="{{this.name}}"> <br>
+      <input type="email"  class="form-control" name="email" placeholder="email" value="{{this.email}}"> <br>
+      <input type="password"  class="form-control" name="password" placeholder="password"  value="{{this.password}}"><br>
+      <textarea name="address"   class="form-control">Address {{this.address}}</textarea> <br>
+
+     <label for="gender">gender</label>
+     <input type="radio" name="gender" class="form-check-input" value="male">male
+     <input type="radio" name="gender" class="form-check-input" value="female">female <br> <br>
+
+     
+      <input type="submit" name="submit" class="btn btn-success"  style="margin-right: 50%;">
+{{/each}}
+</div>
+</form>
+
+
+
+/* edit select */
+
+js
+
+router.get('/edit/:id',async function(req, res, next) {
+  const db = await connectToDB();
+  var id=req.params.id;
+  var q={_id: new ObjectId(id) }
+  await db.collection("registerform").find(q).toArray(function(err,result){
+    if (err) throw err;
+    console.log(result);
+    res.render('edit',{data:result})
+  })
+});
+
+
+
+js <!----------------edit_update----------->
+
+
+router.post('/edit/:id', async function(req, res, next) {
+
+  const db = await connectToDB(); 
+  var id=req.params.id;
+  var name = req.body.name;
+  var email = req.body.email;
+  var password = req.body.password;
+  var address = req.body.address;
+  var gender = req.body.gender;
+  var con={_id: new ObjectId(id) }
+  var update = {$set:{name: name, email: email, password: password, address: address, gender: gender}};
+  await db.collection("registerform").updateOne(con,update,function(err,res){
+    if(err) throw err;
+    console.log(res.result.nModified+" updated");
+});
+res.redirect('/Registrerview')
+
+});
