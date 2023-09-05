@@ -182,3 +182,26 @@ router.post('/edit/:id', async function(req, res, next) {
 res.redirect('/Registrerview')
 
 });
+
+<!-----------------------------------------------------------------------------------SEARCH BOX ------------------------------------------------------------------------------------>
+
+/* Delete */
+router.get('/delete/:id',async function(req, res, next) {
+  const db = await connectToDB();
+  var id=req.params.id;
+  console.log(id)
+  var q={_id: new ObjectId(id) }
+  await db.collection("registerform").deleteOne(q,function(err,res){
+    if(err) throw err;
+    console.log("1 data deleted")
+});
+res.redirect('/Registrerview')
+});
+
+HBS
+ <div class="container w-50">
+ <form class="d-flex" action="/search" method="post" role="search">
+        <input class="form-control me-2" type="text" placeholder="Search" aria-label="Search"  name="search">
+        <button class="btn btn-outline-success" type="submit">Search</button>
+      </form>
+</div>
