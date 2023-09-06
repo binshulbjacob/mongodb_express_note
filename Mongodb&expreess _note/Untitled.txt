@@ -316,6 +316,7 @@ router.get('/logout', async function(req,res){
 /* REGISTER view select uary from registration  */
 
 *new hbs page to user login user login profile updte *
+* check  email=req.session.email;  look to main lofin session is email or user 
 
 router.get('/userprofile', async function(req, res,next) {
   const db = await connectToDB();
