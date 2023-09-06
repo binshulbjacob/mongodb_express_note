@@ -205,3 +205,149 @@ HBS
         <button class="btn btn-outline-success" type="submit">Search</button>
       </form>
 </div>
+<------------------------------------------------------------------------------login with user and admin----------------------------------------------------------------------------->
+<!----Login---->
+
+npm install express-session
+
+Get secret key for session (security)
+
+
+const crypto = require('crypto');
+const secretKey = crypto.randomBytes(64).toString('hex');
+console.log('Generated secret key:', secretKey);
+
+(////these key paste outside  create a the folder and call as js and run in cmd the (nodefilename)///get a code paste in secret)//
+<*** paste this above***)
+
+app.js
+const session = require('express-session');
+
+// Set up session
+app.use(session({
+    secret: 'your-secret-key',
+    resave: false,
+    saveUninitialized: true
+}));
+
+
+js 
+
+router.get('/login', function(req, res) {
+  res.render('login');
+});
+
+////login/with user admin//
+router.post('/login1', async function(req,res){
+const db=await connectToDB();
+var email=req.body.email
+var password=req.body.password
+const v =[{email:email},{password:password}]
+const log1= await db.collection("registerform").find({$and:v}).toArray();
+if(log1.length>0){
+  req.session.email=email
+  if(log1[0]['usertype']===1){
+   return  res.redirect('/admin')
+  }else{
+    return res.redirect('/user');
+  }
+}
+ else{
+  return res.redirect('/login')
+ } 
+});
+
+hbs
+   <div class="container w-50 mt-4">
+   <h3>LOGIN FORM</h3>
+   <form method="POST" action="/login1">
+
+
+    <label for="email">email:</label>
+    <input type="email" name="email" id="email"  class="form-control"><br>
+
+
+    <label for="password">password:</label>
+    <input type="password" name="password" id="password" class="form-control" ><br>
+
+    <input type="submit" value="submit" class="btn btn-danger">
+
+</form>
+</div>
+
+
+
+*then add manually in mongo db user type 1 2 (2 for admin)
+
+*then add in registration page( usertype:2) example below
+
+router.post('/register', async function(req, res, next) {
+  try {
+    const db = await connectToDB(); 
+    var name = req.body.name;
+    var email = req.body.email;
+    var password = req.body.password;
+    var address = req.body.address;
+    var gender = req.body.gender;
+    var myobj = { name:name, email: email, password: password, address: address, gender: gender ,usertype:2 };
+    await db.collection("registerform").insertOne(myobj);
+    console.log("1 data inserted");
+    res.redirect('/');
+  } catch (error) {
+    console.error("Error handling registration data:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+<!------------------------------------------------------------------------------------END------------------------------------------------------------------------------------------>
+logout
+
+/* logout */
+router.get('/logout', async function(req,res){
+  req.session.destroy((err)=>{
+    if(err){
+      console.log(err);
+    }
+    res.redirect('/login');
+  });
+ });
+
+<!-------------------------------------------------------------------------------REGISTER view-----thier address and can edit -------------------------------------------->
+
+/* REGISTER view select uary from registration  */
+
+*new hbs page to user login user login profile updte *
+
+router.get('/userprofile', async function(req, res,next) {
+  const db = await connectToDB();
+  email=req.session.user;
+   console.log(email)
+  var con={email:email}
+   await db.collection("registerform").find(con).toArray(function(err, result) {
+    if (err) throw err;
+    // console.log(result);
+  res.render('Registrerview',{data:result});
+});
+});
+
+hbs 
+
+
+<div class="container w-50">
+    <h3 class="text-center" style="color: coral;">Registration table Edit </h3> <br>
+       {{#each data}}
+       <form action="/edit/{{this._id}}" class="form-control" method="post">
+
+      <input type="text" name="name" placeholder="name" class="form-control"value="{{this.name}}"> <br>
+      <input type="email"  class="form-control" name="email" placeholder="email" value="{{this.email}}"> <br>
+      <input type="password"  class="form-control" name="password" placeholder="password"  value="{{this.password}}"><br>
+      <textarea name="address" placeholder="address"  class="form-control"> {{this.address}}</textarea> <br>
+
+     <label for="gender">gender</label>
+     <input type="radio" name="gender" class="form-check-input" value="male">male
+     <input type="radio" name="gender" class="form-check-input" value="female">female <br> <br>
+
+     
+      <input type="submit" name="submit" class="btn btn-success"  style="margin-right: 50%;">
+{{/each}}
+</div>
+</form>
