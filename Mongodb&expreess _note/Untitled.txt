@@ -185,18 +185,15 @@ res.redirect('/Registrerview')
 
 <!-----------------------------------------------------------------------------------SEARCH BOX ------------------------------------------------------------------------------------>
 
-/* Delete */
-router.get('/delete/:id',async function(req, res, next) {
-  const db = await connectToDB();
-  var id=req.params.id;
-  console.log(id)
-  var q={_id: new ObjectId(id) }
-  await db.collection("registerform").deleteOne(q,function(err,res){
-    if(err) throw err;
-    console.log("1 data deleted")
-});
-res.redirect('/Registrerview')
-});
+/* search */
+router.post('/search', async function(req,res,next){
+  const db = await connectToDB(); 
+  var search = req.body.search;
+  console.log(search)
+  var con={name:search}
+  const result12=await db.collection("registerform").find({name:search}).toArray();
+  res.render('Registrerview',{data:result12})
+  })
 
 HBS
  <div class="container w-50">
@@ -205,7 +202,10 @@ HBS
         <button class="btn btn-outline-success" type="submit">Search</button>
       </form>
 </div>
-<------------------------------------------------------------------------------login with user and admin----------------------------------------------------------------------------->
+
+
+
+<-------------------------------------------------------------------------------login with user and admin----------------------------------------------------------------------------->
 <!----Login---->
 
 npm install express-session
@@ -316,7 +316,10 @@ router.get('/logout', async function(req,res){
 /* REGISTER view select uary from registration  */
 
 *new hbs page to user login user login profile updte *
+*write this code inside
 * check  email=req.session.email;  look to main lofin session is email or user 
+
+
 
 router.get('/userprofile', async function(req, res,next) {
   const db = await connectToDB();
@@ -331,7 +334,6 @@ router.get('/userprofile', async function(req, res,next) {
 });
 
 hbs 
-
 
 <div class="container w-50">
     <h3 class="text-center" style="color: coral;">Registration table Edit </h3> <br>
@@ -352,3 +354,228 @@ hbs
 {{/each}}
 </div>
 </form>
+##############################################################################################################################################################################
+
+Student Management System
+
+Student Management System is software which is helpful for students as well as the school authorities. In the current system all the activities are done manually. 
+Its time saving and scalable. Our Student Management System deals with the various activities related to the students  
+
+In the software we can register as a user and user has two types student and administrator. Administrator has the power to add new user and can edit the students details entered. 
+A admin can add students record ,attendance status with department wise.
+All students can search his/her basics details and attendance status with there respective roll numbers.
+
+
+<!---------only main things noted in note pad----------------->
+
+some ids call in registration page eg below:=====
+
+router.post('/register', async function(req, res, next) {
+  try {
+    const db = await connectToDB(); 
+    var fristname = req.body.fristname;
+    var address = req.body.address;
+    var gender = req.body.gender;
+    var rollnumber = req.body.rollnumber;
+    var department = req.body.department;
+    var date = req.body.date;
+    var email = req.body.email;
+    var password = req.body.password;
+    var myobj = { fristname:fristname, address: address, gender: gender, rollnumber: rollnumber, department: department, date: date , email: email, password: password ,usertype:2, attendence:0,present:0,absent:0 };
+    await db.collection("studentmanagement").insertOne(myobj);
+    console.log("1 data inserted");
+    res.redirect('/');
+  } catch (error) {
+    console.error("Error handling registration data:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+<!-------------------------attendence page show in user -------------------------------------------.>
+
+js 
+/*attendence page*/
+router.get('/attendence', async function(req, res){
+  const db = await connectToDB();
+  await db.collection("studentmanagement").find({}).toArray(function(err, result){
+    if (err) throw err;
+  res.render('attendence',{data:result});
+});
+});
+
+
+hbs
+
+<table border="1" class="mt-3 ">
+<form action="/present" class="form-control" method="post"> 
+<tr>
+    <th>fristname</th>
+    <th>rollnumber</th>
+    <th>department</th>
+    <th>date</th>
+    <th>result</th>
+</tr>
+{{#each data}}
+<tr>
+    <td>{{this.fristname}}</td>
+    <td>{{this.rollnumber}}</td>
+    <td>{{this.department}}</td>
+    <td>{{this.date}}</td> 
+    <td>
+    <a href="/present/{{this._id}}" class="btn btn-success">Present</a>
+    <a href="/absent/{{this._id}}" class="btn btn-danger">absent</a>
+    </td>
+</tr>
+{{/each}}
+</table>
+</form>
+
+
+in db create new colllection name attendence =>/(student managment is student regpage )
+quary for insert absent present in new collecton
+
+
+router.get('/absent/:_id',async function(req,res,next){
+  const db = await connectToDB();
+  var id=req.params._id;
+  var qry ={_id:new ObjectId(id)};
+  var date=new Date();
+
+  var att='absent';
+  var t=await db.collection('studentmanagement').find(qry).toArray();
+  // console.log(t)
+  var total=t[0]['absent']
+  var totalap=parseInt(t[0]['present'])
+
+  totala=parseInt(total+1);
+  var tadtence =parseInt(totala+totalap)
+  var obj={sid:id,date:date,attendence:att};
+
+  await db.collection('attendence').insertOne(obj);
+  var val={$set:{absent:totala,attendence:tadtence}}
+  await db.collection('studentmanagement').updateOne(qry,val);
+  res.redirect('/attendence');
+})
+///////////////////////////////////////////////////////////////
+
+router.get('/present/:_id',async function(req,res,next){
+  const db = await connectToDB();
+  var id=req.params._id;
+  var qry ={_id:new ObjectId(id)};
+  var date=new Date();
+
+  var att='present';
+  var t=await db.collection('studentmanagement').find(qry).toArray();
+  // console.log(t)
+  var total=t[0]['present']
+  var totalap=parseInt(t[0]['present'])
+
+  totala=parseInt(total+1);
+
+  var tadtence =parseInt(t[0]['attendence']+1)
+  // var tadtence =parseInt(totala+totalap)
+  
+  var obj={sid:id,date:date,attendence:att};
+
+  await db.collection('attendence').insertOne(obj);
+  var val={$set:{present:totala,attendence:tadtence}}
+  await db.collection('studentmanagement').updateOne(qry,val);
+  res.redirect('/attendence');
+})
+
+
+inserted you can see in collection output :example below
+
+_id:64fb37032d2c633eb854461f
+sid:"64fb217ad624821408f093aa"
+date:2023-09-08T15:00:19.035+00:00
+attendence:"present"
+
+<!------------------------------------------------------------------------------------------------------------------------------------------------------------------------>
+
+
+
+/*   */
+router.get('/attendence1',async function(req, res, next) {
+  const db = await connectToDB();
+ email=req.session.email
+  var q={email:email }
+  // con=[{sid:new ObjectId(id)},{attendence:'present'}]
+//
+  await db.collection("studentmanagement").find(q).toArray( async function(err,result){
+    if (err) throw err;
+  
+    var id=result[0]['_id'].toString()
+    console.log(id);
+    con=[{sid:id},{attendence:"present"}]
+    con1=[{sid:id},{attendence:"absent"}]
+   
+    await db.collection("attendence").find({$and:con}).toArray( async function(err,result1){
+      await db.collection("attendence").find({$and:con1}).toArray(function(err,result2){
+
+      // console.log(result1);
+    res.render('attendence1',{data:result,presentcount:result1,absent:result2})
+  })
+});
+});
+})
+
+
+
+hbs
+
+*this select from hbs page registration(akatan namal present absent vachiricuna)
+
+<h1>ATTENDENCE</h1>
+{{#each data}}
+<table style="width:100%">
+  <tr>
+    <th>rollnumber</th> 
+    <th>present</th> 
+    <th>absent</th>
+     <th>total working days</th>
+  </tr>
+  <tr>
+    <td>{{this.rollnumber}}</td>
+    <td>{{this.present}}</td>
+    <td>{{this.absent}}</td>
+    <td>{{this.attendence}}</td>
+  </tr>
+
+</table> <br> <br>
+{{/each}}
+
+
+***this present absent from database attendence store akuna present asent date show chayan ***
+
+<h1>present </h1>
+{{#each presentcount}}
+<table style="width:100%">
+  <tr>
+    {{!-- <th>present</th>  --}}
+  </tr>
+  <tr>
+    <td>{{this.date}}</td>
+  </tr>
+</table>
+{{/each}}
+ <br> <br>
+
+
+<h1> Absent</h1>
+{{#each absent}}
+
+<table style="width:100%">
+  <tr>
+    {{!-- <th>absent</th>  --}}
+  </tr>
+  <tr>
+    <td>{{this.date}}</td>
+  </tr>
+</table>
+{{/each}}
+
+
+
+
+
